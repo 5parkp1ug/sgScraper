@@ -1,11 +1,12 @@
+from multiprocessing import Pool
 from datetime import datetime
 import eng_movies_provider as engAPI
+from get_all_links import get_all_movies as getAllMovies
 import re
 import urllib
 import urlparse
 from bs4 import BeautifulSoup
 
-url = "http://58.65.128.2:602/English%20Movies%20(H%20-%20L)/Harry%20Potter-1-2-3-4-5-6-7/?sortby"
 
 def get_all_links(url):
 	html = urllib.urlopen(url)
@@ -34,21 +35,22 @@ def main():
 	url = 'http://www.sharinggalaxy.com/14/ToServer.jsp?type=em&server=three'	
 	obj = engAPI.eng_movies_provider()
 	obj.set_url(url)
-	obj.scrape()
-	op = 'y'
+	all_links = [value for value in obj.getUrls().values()]
+	
+	# Single thread
+	# for key,value in all_links.items():
+	# 	print "getting all links for " + value
+	# 	getAllMovies(value)
+	
 
-	while(op!='n'):		
-		search_string = raw_input("Enter Search string - ")
-		result = obj.search(search_string)
-		print "[INFO] SEARCHING for the movie "+ search_string
-		# print result
-		# print result['movie_list']
-		if result['status']:
-			for item in result['movie_list']:
-				for key,value in item.items():
-					get_all_links(value)
-					# print key+" : "+value
-		op = raw_input("Do you Want to Search More(y/n)?[Defaut: y]  ")
+	#Using Pool
+	p = Pool()
+	p.map(getAllMovies,all_links)
+	p.close()
+	p.join()
+
+
+
 
 	print datetime.now()-startTime
 

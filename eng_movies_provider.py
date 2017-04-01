@@ -27,7 +27,7 @@ class eng_movies_provider:
 			"soup": bs
 		}
 
-	def scrape(self):
+	def getUrls(self):
 		print "[INFO] Starting Scraping Level 1"
 		response = self.getSoup(self.url)
 		if response['status']:
@@ -61,47 +61,3 @@ class eng_movies_provider:
 			self.level2_urls[movie_range] = movie_range_url
 
 		return self.level2_urls
-
-	def search(self, param):
-		print "[STATUS] Starting URL Search module"
-		response = {
-			"status": False,
-			"message": "Please run the scrape module first."
-		}
-		if self.level2_urls:
-			first_letter = param[0]
-			for key, value in self.level2_urls.items():
-				#search for movie in the respective range URL
-				if first_letter >= key.split("-")[0] and first_letter <= key.split("-")[1]:
-					print "[RESULT] Found the URL to search for the movie - "+ value
-					response = {
-						"status": True,
-						"movie_list": self.get_movie_url(param, value) 
-					}
-					return response
-			response["message"] = "Invalid input."
-			return response
-		else:
-			return response
-
-	def get_movie_url(self, name, range_url):
-		print "[STATUS] Starting Movie search Module"
-		regex = ""
-		#create the keyword from the name of the movie
-		keywords = name.split()
-		print "[INFO] keywords to search are - "+ str(keywords)
-		for name in keywords:
-			regex += "(?=.*\\b"+name+"\\b)" 
-		print "[INFO] Regex to search is - "+ regex
-		response = self.getSoup(range_url)
-		if response['status']:
-			bs = response['soup']
-			all_movies = bs.findAll("a",{'href' : re.compile('^'+regex+'.*$')})
-			# all_movies = bs.findAll("href" = keywords)
-			return [{a.text: range_url.strip("?sortby=")+"/"+a['href'].split("/")[2].replace(" ", "%20")} for a in all_movies]
-
-		else:
-			return response
-
-
-			

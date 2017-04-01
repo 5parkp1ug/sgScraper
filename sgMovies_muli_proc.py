@@ -1,13 +1,10 @@
+import re
 import urllib
 import Queue
 import urlparse
 from bs4 import BeautifulSoup
 from datetime import datetime
-from multiprocessing import Pool
-
-
-level1_urls = []
-level2_urls = []
+from multiprocessing import Pool, Value
 
 class bcolors:
     HEADER = '\033[95m'
@@ -40,37 +37,59 @@ def scrape_level2(url):
 		full_url = url+path
 		level2_urls.append(full_url)
 
+def init(counter):
+	global moviectr
+	moviectr = counter
+
+
 def scrape_level3(full_url):
 
-	
+	print "calling scrape level 3"
 	#find the name of the movies from the sub-categpry page
 	html = urllib.urlopen(full_url)
 	bs = BeautifulSoup(html.read(),"lxml")
 
-	movies = bs.findAll("a",{"href":True})
+	movies = bs.findAll("a",re.compile('^\/English*'))
+	print len(movies)
 	o = urlparse.urlparse(full_url)
 	url = o.netloc
 	for movie in movies:
-		#print bcolors.HEADER + "Movie Name - %s"%(movie.getText()) # Name of the movie
+		print bcolors.HEADER + "Movie Name - %s"%(movie.getText()) # Name of the movie
+		level3_urls.append(movie.getText())
+		moviectr+=1
+		print moviectr
+		#print bcolors.OKBLUE + "http://"+url+path
 
-		path = movie['href'].replace(" ","%20")
-		if path != '/':	
-			if "Harry" in "http://"+url+path:
-				print "http://"+url+path
-			# print bcolors.OKBLUE + "http://"+url+path
+		# path = movie['href'].replace(" ","%20")
+		# if path != '/':	
+		# 	if "Harry" in "http://"+url+path:
+		# 		print "http://"+url+path
+
+
+##################################################################################
+#Variables
+level1_urls = []
+level2_urls = []
+level3_urls = []
+
 
 
 # capture current time
 startTime = datetime.now()
 
-url = urllib.urlopen('http://www.sharinggalaxy.com/14/ToServer.jsp?type=hm&server=three')
+url = urllib.urlopen('http://www.sharinggalaxy.com/14/ToServer.jsp?type=em&server=three')
 scrape_level1(url)
 print level1_urls
 print level2_urls
 
-p = Pool(processes=7)
+#create a Multiprocessing value for counter
+moviectr = Value('i',1)
+print moviectr
+p = Pool(initializer=init, initargs=(moviectr,))
 p.map(scrape_level3,level2_urls)
-p.close()
-p.join()
+
+
+print moviectr
+
 # print current time minus the start time
 print datetime.now()-startTime
